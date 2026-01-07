@@ -8,15 +8,15 @@ pipeline {
     }
 
     stages {
-        stage('Checkout from Git') {
+        stage('Cleaning Workspace') {
             steps {
-                echo 'Checking out Git repository...'
+                cleanWs() 
             }
         }
 
-        stage('Terraform version') {
+        stage('Checkout from Git') {
             steps {
-                sh 'terraform --version'
+                checkout scm
             }
         }
 
@@ -28,18 +28,10 @@ pipeline {
             }
         }
 
-        stage('Terraform validate') {
-            steps {
-                dir('ecr-terraform') {
-                    sh 'terraform init -reconfigure'
-                    sh 'terraform validate'
-                }
-            }
-        }
-
         stage('Terraform plan') {
             steps {
                 dir('ecr-terraform') {
+                    // On force la réinitialisation ici aussi
                     sh 'terraform init -reconfigure'
                     sh 'terraform plan'
                 }
