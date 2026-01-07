@@ -1,7 +1,12 @@
 
 pipeline {
     agent any
-
+    environment {
+        // Ces noms entre parenthèses doivent être EXACTEMENT les IDs que vous avez écrit dans Jenkins
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+        AWS_SESSION_TOKEN     = credentials('aws-session-token')
+    }
     parameters {
         choice(
             name: 'ACTION',
