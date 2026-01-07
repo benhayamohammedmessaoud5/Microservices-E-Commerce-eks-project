@@ -1,39 +1,34 @@
 pipeline {
     agent any
-
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+        AWS_SESSION_TOKEN     = credentials('aws-session-token')
+        AWS_REGION            = "us-east-1"
+    }
+    
     parameters {
-        choice(
-            name: 'ACTION',
-            choices: ['apply', 'destroy'],
-            description: '🔧 Select the Terraform action to perform'
-        )
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: '🔧 Action Terraform')
     }
 
     stages {
-        stage('Checkout from Git') {
+        stage('Cleaning Workspace') {
             steps {
-                echo 'Checking out Git repository...'
+                // Cette ligne supprime les anciens restes de S3 pour partir sur du propre
+                cleanWs() 
             }
         }
 
-        stage('Terraform version') {
+        stage('Checkout from Git') {
             steps {
-                sh 'terraform --version'
+                checkout scm
             }
         }
 
         stage('Terraform init') {
             steps {
                 dir('eks-terraform') {
-                    sh 'terraform init --reconfigure'
-                }
-            }
-        }
-
-        stage('Terraform validate') {
-            steps {
-                dir('eks-terraform') {
-                    sh 'terraform validate'
+                    sh 'terraform init -reconfigure'
                 }
             }
         }
@@ -41,29 +36,19 @@ pipeline {
         stage('Terraform plan') {
             steps {
                 dir('eks-terraform') {
+                    // On rajoute init ici aussi pour être sûr que le plan utilise le bon backend local
+                    sh 'terraform init -reconfigure'
                     sh 'terraform plan'
                 }
             }
         }
 
         stage('Terraform apply') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
+            when { expression { params.ACTION == 'apply' } }
             steps {
                 dir('eks-terraform') {
+                    sh 'terraform init -reconfigure'
                     sh 'terraform apply -auto-approve'
-                }
-            }
-        }
-
-        stage('Terraform destroy') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
-            steps {
-                dir('eks-terraform') {
-                    sh 'terraform destroy -auto-approve'
                 }
             }
         }
