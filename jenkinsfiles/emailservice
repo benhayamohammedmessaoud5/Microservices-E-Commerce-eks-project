@@ -1,6 +1,18 @@
 pipeline {
     agent any 
-
+   environment {
+        // AJOUTEZ VOS CREDENTIALS ICI (comme pour EKS)
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+        AWS_SESSION_TOKEN     = credentials('aws-session-token')
+        
+        // MODIFIEZ CES DEUX LIGNES AVEC VOTRE COMPTE (590183765444) ET VOTRE REPO GITHUB
+        REPO_URL = "590183765444.dkr.ecr.us-east-1.amazonaws.com/emailservice"
+        GIT_URL  = "https://github.com/benhayamohammedmessaoud5/Microservices-E-Commerce-eks-project.git"
+        
+        IMAGE_NAME = "emailservice"
+        // ...
+    }
     stages {
         stage('Cleaning Workspace') {
             steps {
