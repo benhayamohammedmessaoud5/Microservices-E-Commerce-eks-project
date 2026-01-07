@@ -2,18 +2,15 @@ pipeline {
     agent any 
 
     environment {
-        // --- CONFIGURATION AWS ACADEMY ---
         AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
         AWS_SESSION_TOKEN     = credentials('aws-session-token')
         AWS_REGION            = "us-east-1"
         
-        // --- CONFIGURATION PROJET ---
-        ACCOUNT_ID    = "590183765444" 
+        ACCOUNT_ID    = "590183765444" // VOTRE ID DE COMPTE
         IMAGE_NAME    = "recommendationservice"
         REPO_URL      = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
         
-        // --- CONFIGURATION GITHUB ---
         GIT_USER_NAME = "benhayamohammedmessaoud5"
         GIT_REPO_NAME = "Microservices-E-Commerce-eks-project"
         GIT_EMAIL     = "benhayamessaoud51@gmail.com"
@@ -22,14 +19,11 @@ pipeline {
 
     stages {
         stage('Cleaning Workspace') {
-            steps {
-                cleanWs()
-            }
+            steps { cleanWs() }
         }
 
         stage('Checkout from Git') {
             steps {
-                // Utilise votre fork pour avoir les droits d'écriture
                 git branch: 'master', url: "https://github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git"
             }
         }
@@ -48,10 +42,7 @@ pipeline {
         stage("ECR Image Pushing") {
             steps {
                 script {
-                    // Authentification Docker ECR
                     sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-                    
-                    // Tag et Push vers votre ECR
                     sh "docker tag ${IMAGE_NAME}:latest ${REPO_URL}:${BUILD_NUMBER}"
                     sh "docker push ${REPO_URL}:${BUILD_NUMBER}"
                 }
@@ -61,19 +52,13 @@ pipeline {
         stage('Update Deployment file') {
             steps {
                 dir('kubernetes-files') {
-                    // Utilise votre PAT GitHub créé précédemment
                     withCredentials([string(credentialsId: 'my-git-pattoken', variable: 'GIT_TOKEN')]) {
                         sh """
                             git config user.email "${GIT_EMAIL}"
                             git config user.name "${GIT_USER_NAME}"
-                            
-                            # Mise à jour du tag de l'image dans le YAML
                             sed -i "s#image:.*#image: ${REPO_URL}:${BUILD_NUMBER}#g" ${YAML_FILE}
-                            
                             git add ${YAML_FILE}
                             git commit -m "Update ${IMAGE_NAME} Image to version ${BUILD_NUMBER}"
-                            
-                            # Push vers GitHub avec le Token d'accès
                             git push https://${GIT_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:master
                         """
                     }
