@@ -1,18 +1,10 @@
-
 pipeline {
     agent any
     environment {
-        // Ces noms entre parenthèses doivent être EXACTEMENT les IDs que vous avez écrit dans Jenkins
         AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
         AWS_SESSION_TOKEN     = credentials('aws-session-token')
-    }
-    parameters {
-        choice(
-            name: 'ACTION',
-            choices: ['apply', 'destroy'],
-            description: '🔧 Select the Terraform action to perform (apply = create/update, destroy = delete all)'
-        )
+        AWS_REGION            = "us-east-1"
     }
 
     stages {
@@ -31,7 +23,7 @@ pipeline {
         stage('Terraform init') {
             steps {
                 dir('ecr-terraform') {
-                    sh 'terraform init --reconfigure'
+                    sh 'terraform init -reconfigure'
                 }
             }
         }
@@ -39,6 +31,7 @@ pipeline {
         stage('Terraform validate') {
             steps {
                 dir('ecr-terraform') {
+                    sh 'terraform init -reconfigure'
                     sh 'terraform validate'
                 }
             }
@@ -47,29 +40,17 @@ pipeline {
         stage('Terraform plan') {
             steps {
                 dir('ecr-terraform') {
+                    sh 'terraform init -reconfigure'
                     sh 'terraform plan'
                 }
             }
         }
 
         stage('Terraform apply') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
             steps {
                 dir('ecr-terraform') {
+                    sh 'terraform init -reconfigure'
                     sh 'terraform apply -auto-approve'
-                }
-            }
-        }
-
-        stage('Terraform destroy') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
-            steps {
-                dir('ecr-terraform') {
-                    sh 'terraform destroy -auto-approve'
                 }
             }
         }
