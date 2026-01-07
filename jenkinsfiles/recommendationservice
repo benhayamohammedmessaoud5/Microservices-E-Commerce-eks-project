@@ -1,16 +1,19 @@
 pipeline {
-    agent any 
+    agent any
 
     environment {
+        // AWS Credentials from Jenkins Credential Store
         AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
         AWS_SESSION_TOKEN     = credentials('aws-session-token')
         AWS_REGION            = "us-east-1"
         
-        ACCOUNT_ID    = "590183765444" // VOTRE ID DE COMPTE
+        // Corrected Account ID from your logs
+        ACCOUNT_ID    = "590183765444" 
         IMAGE_NAME    = "recommendationservice"
         REPO_URL      = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
         
+        // Github Details
         GIT_USER_NAME = "benhayamohammedmessaoud5"
         GIT_REPO_NAME = "Microservices-E-Commerce-eks-project"
         GIT_EMAIL     = "benhayamessaoud51@gmail.com"
@@ -19,7 +22,9 @@ pipeline {
 
     stages {
         stage('Cleaning Workspace') {
-            steps { cleanWs() }
+            steps {
+                cleanWs()
+            }
         }
 
         stage('Checkout from Git') {
@@ -31,9 +36,10 @@ pipeline {
         stage("Docker Image Build") {
             steps {
                 script {
+                    // Navigate to the specific microservice folder
                     dir('src/recommendationservice') {
                         sh 'docker system prune -f'
-                        sh 'docker build -t ${IMAGE_NAME} .'
+                        sh "docker build -t ${IMAGE_NAME} ."
                     }
                 }
             }
@@ -42,7 +48,10 @@ pipeline {
         stage("ECR Image Pushing") {
             steps {
                 script {
+                    // Login to ECR using the correct account ID variable
                     sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+                    
+                    // Tag and Push
                     sh "docker tag ${IMAGE_NAME}:latest ${REPO_URL}:${BUILD_NUMBER}"
                     sh "docker push ${REPO_URL}:${BUILD_NUMBER}"
                 }
@@ -56,9 +65,12 @@ pipeline {
                         sh """
                             git config user.email "${GIT_EMAIL}"
                             git config user.name "${GIT_USER_NAME}"
+                            
+                            # Replace the image line in the YAML file
                             sed -i "s#image:.*#image: ${REPO_URL}:${BUILD_NUMBER}#g" ${YAML_FILE}
+                            
                             git add ${YAML_FILE}
-                            git commit -m "Update ${IMAGE_NAME} Image to version ${BUILD_NUMBER}"
+                            git commit -m "Update ${IMAGE_NAME} Image to version ${BUILD_NUMBER} [skip ci]"
                             git push https://${GIT_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:master
                         """
                     }
