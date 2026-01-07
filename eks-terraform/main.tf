@@ -47,7 +47,7 @@ data "aws_security_group" "selected" {
 # EKS Cluster
 # ----------------------------
 resource "aws_eks_cluster" "eks" {
-  name     = "project-eks"
+  name     = "project-eks-v2"
   
   # On utilise le rôle pré-existant du Lab
   role_arn = local.lab_role_arn

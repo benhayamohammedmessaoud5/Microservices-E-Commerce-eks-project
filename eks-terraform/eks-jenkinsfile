@@ -12,12 +12,7 @@ pipeline {
     }
 
     stages {
-        stage('Cleaning Workspace') {
-            steps {
-                // Cette ligne supprime les anciens restes de S3 pour partir sur du propre
-                cleanWs() 
-            }
-        }
+        
 
         stage('Checkout from Git') {
             steps {
